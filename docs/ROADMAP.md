@@ -10,7 +10,7 @@ Objetivo: recuperar rápidamente el contexto necesario para continuar un proyect
 - [x] Inicializar Git
 - [x] Crear repositorio GitHub
 - [ ] Documentar producto
-- [ ] Diseñar esquema Supabase
+- [x] Diseñar esquema Supabase
 - [ ] Configurar Supabase
 
 ### Projects
