@@ -131,6 +131,13 @@ V1 no tiene usuarios ni autenticación. Decisión:
 
 Consecuencia: la protección de los datos depende de que la aplicación desplegada no sea pública. Antes del deploy en Vercel hay que restringir el acceso a la aplicación (por ejemplo, Vercel Deployment Protection o un login simple). Si más adelante se agrega Supabase Auth, se deberán otorgar privilegios a `authenticated` y crear policies explícitas.
 
+### Acceso desde Next.js
+
+- `src/lib/supabase/server.ts` crea el cliente Supabase con `SUPABASE_URL` y `SUPABASE_SECRET_KEY`. Importa `server-only`, por lo que el build falla si se importa desde un Client Component.
+- `src/lib/projects.ts` (también `server-only`) contiene las consultas. Ante un error registra solo el código en el log del servidor y lanza un error genérico.
+- Las variables se documentan en `.env.example`; los valores reales van en `.env.local` (ignorado por Git) o en las variables de entorno de Vercel.
+- No hay Route Handlers ni Server Actions que expongan datos u operaciones con la clave secret.
+
 ### Desarrollo local
 
 Requiere Docker y la [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started).
