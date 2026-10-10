@@ -51,5 +51,3 @@ Before considering an implementation complete:
 5. Clearly summarize what changed and what remains pending.
 
 Do not claim something works unless it was actually verified.
-
-<!-- END:nextjs-agent-rules -->
