@@ -100,7 +100,7 @@ Nunca almacenar passwords, API keys, access tokens ni secretos.
 
 ## Base de datos (Supabase)
 
-El esquema se define mediante migraciones en `supabase/migrations/`. La migración inicial es `20261001141500_initial_schema.sql`.
+El esquema se define mediante migraciones en `supabase/migrations/`. La migración inicial es `20261001141500_initial_schema.sql`. Las migraciones ya aplicadas no se modifican: los cambios van en una migración nueva.
 
 ### Reglas del esquema
 
@@ -125,11 +125,19 @@ V1 no tiene usuarios ni autenticación. Decisión:
 
 - RLS está habilitado en las tres tablas y no existe ninguna policy.
 - Se revocan todos los privilegios de esas tablas para los roles `anon` y `authenticated`.
+- Se otorgan explícitamente `select`, `insert`, `update` y `delete` sobre las tres tablas a `service_role` (migración `20261010120000_grant_service_role_table_privileges.sql`). Hay proyectos de Supabase que no otorgan estos privilegios por defecto en tablas nuevas, y sin ellos el servidor recibe el error 42501.
 - Por lo tanto, la Data API de Supabase con la clave pública (anon / publishable) no puede leer ni escribir datos.
 - Todo acceso a datos se hace desde código de servidor de Next.js (Server Components, Server Actions o Route Handlers) usando la clave `service_role` / secret, que omite RLS.
 - La clave `service_role` / secret solo puede existir en variables de entorno del servidor (nunca con prefijo `NEXT_PUBLIC_`) y nunca se commitea.
 
 Consecuencia: la protección de los datos depende de que la aplicación desplegada no sea pública. Antes del deploy en Vercel hay que restringir el acceso a la aplicación (por ejemplo, Vercel Deployment Protection o un login simple). Si más adelante se agrega Supabase Auth, se deberán otorgar privilegios a `authenticated` y crear policies explícitas.
+
+### Acceso desde Next.js
+
+- `src/lib/supabase/server.ts` crea el cliente Supabase con `SUPABASE_URL` y `SUPABASE_SECRET_KEY`. Importa `server-only`, por lo que el build falla si se importa desde un Client Component.
+- `src/lib/projects.ts` (también `server-only`) contiene las consultas. Ante un error registra solo el código en el log del servidor y lanza un error genérico.
+- Las variables se documentan en `.env.example`; los valores reales van en `.env.local` (ignorado por Git) o en las variables de entorno de Vercel.
+- No hay Route Handlers ni Server Actions que expongan datos u operaciones con la clave secret.
 
 ### Desarrollo local
 

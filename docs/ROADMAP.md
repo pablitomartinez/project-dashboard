@@ -11,11 +11,12 @@ Objetivo: recuperar rápidamente el contexto necesario para continuar un proyect
 - [x] Crear repositorio GitHub
 - [ ] Documentar producto
 - [x] Diseñar esquema Supabase
-- [ ] Configurar Supabase
+- [x] Configurar Supabase (cliente de servidor)
 
 ### Projects
 
 - [ ] Dashboard de proyectos
+  - [x] Listado de proyectos (solo lectura, ordenado por `updated_at`)
 - [ ] Crear proyecto
 - [ ] Editar proyecto
 - [ ] Eliminar proyecto
