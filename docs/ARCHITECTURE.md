@@ -100,7 +100,7 @@ Nunca almacenar passwords, API keys, access tokens ni secretos.
 
 ## Base de datos (Supabase)
 
-El esquema se define mediante migraciones en `supabase/migrations/`. La migración inicial es `20261001141500_initial_schema.sql`.
+El esquema se define mediante migraciones en `supabase/migrations/`. La migración inicial es `20261001141500_initial_schema.sql`. Las migraciones ya aplicadas no se modifican: los cambios van en una migración nueva.
 
 ### Reglas del esquema
 
@@ -125,6 +125,7 @@ V1 no tiene usuarios ni autenticación. Decisión:
 
 - RLS está habilitado en las tres tablas y no existe ninguna policy.
 - Se revocan todos los privilegios de esas tablas para los roles `anon` y `authenticated`.
+- Se otorgan explícitamente `select`, `insert`, `update` y `delete` sobre las tres tablas a `service_role` (migración `20261010120000_grant_service_role_table_privileges.sql`). Hay proyectos de Supabase que no otorgan estos privilegios por defecto en tablas nuevas, y sin ellos el servidor recibe el error 42501.
 - Por lo tanto, la Data API de Supabase con la clave pública (anon / publishable) no puede leer ni escribir datos.
 - Todo acceso a datos se hace desde código de servidor de Next.js (Server Components, Server Actions o Route Handlers) usando la clave `service_role` / secret, que omite RLS.
 - La clave `service_role` / secret solo puede existir en variables de entorno del servidor (nunca con prefijo `NEXT_PUBLIC_`) y nunca se commitea.
