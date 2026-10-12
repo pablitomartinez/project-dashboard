@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, type ReactNode } from "react";
+import { useActionState, useEffect, useRef, type ReactNode } from "react";
 
 import { createProjectAction } from "@/app/actions";
 import {
@@ -58,16 +58,31 @@ function Field({ name, label, state, className, children }: FieldProps) {
 }
 
 export function CreateProjectForm() {
+  const formRef = useRef<HTMLFormElement>(null);
   const [state, formAction, pending] = useActionState(
     createProjectAction,
     initialState,
   );
 
+  useEffect(() => {
+    if (state.status === "success") {
+      formRef.current?.reset();
+    }
+  }, [state]);
+
   return (
     <details className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
       <summary className="cursor-pointer font-medium">Nuevo proyecto</summary>
 
-      <form action={formAction} className="mt-4" noValidate>
+      <form
+        ref={formRef}
+        action={formAction}
+        onSubmit={(event) => {
+          if (pending) event.preventDefault();
+        }}
+        className="mt-4"
+        noValidate
+      >
         <fieldset disabled={pending} className="grid gap-4 sm:grid-cols-2">
           <Field name="name" label="Nombre *" state={state} className="sm:col-span-2">
             {(props) => <input {...props} type="text" required maxLength={120} />}
@@ -77,7 +92,11 @@ export function CreateProjectForm() {
           </Field>
           <Field name="status" label="Estado" state={state}>
             {({ defaultValue, ...props }) => (
-              <select {...props} defaultValue={defaultValue || "active"}>
+              <select
+                {...props}
+                key={defaultValue || "active"}
+                defaultValue={defaultValue || "active"}
+              >
                 {PROJECT_STATUSES.map((status) => (
                   <option key={status} value={status}>
                     {PROJECT_STATUS_LABELS[status]}
