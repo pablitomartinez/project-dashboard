@@ -22,12 +22,12 @@ Objetivo: recuperar rápidamente el contexto necesario para continuar un proyect
 - [x] Eliminar proyecto (confirmación explícita; borra en cascada tareas y recursos)
 - [ ] Estados active / paused / completed
 - [ ] Progreso manual
-- [ ] Detalle de proyecto
+- [x] Detalle de proyecto (`/projects/[id]`)
 
 ### Tasks
 
-- [ ] Crear tareas
-- [ ] Completar tareas
+- [x] Crear tareas
+- [x] Completar tareas (marcar y desmarcar)
 - [ ] Eliminar tareas
 - [ ] Ordenar tareas
 - [ ] Calcular progreso mediante tareas

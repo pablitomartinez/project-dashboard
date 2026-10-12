@@ -40,6 +40,21 @@ export async function listProjects(): Promise<Project[]> {
   return (data ?? []) as Project[];
 }
 
+export async function getProject(id: string): Promise<Project | null> {
+  const { data, error } = await getSupabaseServerClient()
+    .from("projects")
+    .select(PROJECT_COLUMNS)
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) {
+    console.error("getProject failed", { code: error.code });
+    throw new Error("Could not load project.");
+  }
+
+  return data as Project | null;
+}
+
 export async function createProject(input: CreateProjectInput): Promise<void> {
   const { error } = await getSupabaseServerClient()
     .from("projects")

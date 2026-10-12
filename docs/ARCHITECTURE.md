@@ -170,6 +170,24 @@ revalida `/`. Si el proyecto ya no existe, informa el caso y también revalida e
 listado. Los avisos de eliminación se muestran fuera de la tarjeta, que se retira del
 listado. Como el resto de las Server Actions, solo es apta para uso local.
 
+La página `/projects/[id]` muestra el nombre, la descripción, el estado y las tareas
+del proyecto. Valida el UUID de la ruta y usa `notFound()` si es inválido o si el
+proyecto no existe. `src/lib/tasks.ts` (`server-only`) lista las tareas del proyecto
+ordenadas por `position` y `created_at`. Las tareas nuevas usan el `position` por
+defecto (0), así que quedan al final por `created_at`. `src/app/task-actions.ts` define:
+
+- `createTaskAction`: valida el UUID y el título (obligatorio, máximo 500 caracteres)
+  en el servidor e inserta la tarea. Si el proyecto no existe, la FK (`23503`) se
+  informa como proyecto inexistente.
+- `toggleTaskAction`: valida ambos UUID y que `completed` sea booleano. Actualiza
+  filtrando por `id` y `project_id`, así que una tarea solo se puede modificar a
+  través de su propio proyecto.
+
+Ambas revalidan `/projects/[id]`. El checkbox muestra siempre el valor persistido:
+cambia recién cuando el servidor confirma. Ante un error conserva el estado anterior.
+No se modifica el cálculo de progreso. Como el resto de las Server Actions, solo son
+aptas para uso local.
+
 ### Desarrollo local
 
 Requiere Docker y la [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started).
