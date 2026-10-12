@@ -21,7 +21,7 @@ Objetivo: recuperar rápidamente el contexto necesario para continuar un proyect
 - [x] Editar proyecto (formulario precargado y Server Action con validación)
 - [x] Eliminar proyecto (confirmación explícita; borra en cascada tareas y recursos)
 - [ ] Estados active / paused / completed
-- [ ] Progreso manual
+- [x] Progreso manual
 - [x] Detalle de proyecto (`/projects/[id]`)
 
 ### Tasks
@@ -31,7 +31,7 @@ Objetivo: recuperar rápidamente el contexto necesario para continuar un proyect
 - [x] Editar título de tareas
 - [x] Eliminar tareas (confirmación explícita)
 - [ ] Ordenar tareas
-- [ ] Calcular progreso mediante tareas
+- [x] Calcular progreso mediante tareas
 - [ ] Mostrar siguiente tarea
 
 ### Project Context

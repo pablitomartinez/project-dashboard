@@ -61,6 +61,7 @@ export async function updateProjectAction(
 
   try {
     const updated = await updateProject(id, parsed.data);
+    revalidatePath(`/projects/${id}`);
     if (!updated) {
       revalidatePath("/");
       return {
