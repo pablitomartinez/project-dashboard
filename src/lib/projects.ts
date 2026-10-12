@@ -1,8 +1,9 @@
 import "server-only";
 
+import type { CreateProjectInput, ProjectStatus } from "@/lib/project-input";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
-export type ProjectStatus = "active" | "paused" | "completed";
+export type { ProjectStatus };
 export type ProgressMode = "manual" | "tasks";
 
 export type Project = {
@@ -37,4 +38,15 @@ export async function listProjects(): Promise<Project[]> {
   }
 
   return (data ?? []) as Project[];
+}
+
+export async function createProject(input: CreateProjectInput): Promise<void> {
+  const { error } = await getSupabaseServerClient()
+    .from("projects")
+    .insert({ ...input, progress_mode: "manual" });
+
+  if (error) {
+    console.error("createProject failed", { code: error.code });
+    throw new Error("Could not create project.");
+  }
 }

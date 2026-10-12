@@ -1,12 +1,8 @@
 import { connection } from "next/server";
 
-import { listProjects, type Project, type ProjectStatus } from "@/lib/projects";
-
-const STATUS_LABELS: Record<ProjectStatus, string> = {
-  active: "Activo",
-  paused: "Pausado",
-  completed: "Terminado",
-};
+import { CreateProjectForm } from "@/app/create-project-form";
+import { PROJECT_STATUS_LABELS } from "@/lib/project-input";
+import { listProjects, type Project } from "@/lib/projects";
 
 export default async function Home() {
   await connection();
@@ -24,6 +20,8 @@ export default async function Home() {
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-10 sm:px-6">
       <h1 className="text-2xl font-semibold tracking-tight">Proyectos</h1>
+
+      <CreateProjectForm />
 
       {projects === null ? (
         <p
@@ -46,7 +44,7 @@ export default async function Home() {
               <div className="flex items-center justify-between gap-3">
                 <h2 className="font-medium">{project.name}</h2>
                 <span className="shrink-0 text-xs text-zinc-600 dark:text-zinc-400">
-                  {STATUS_LABELS[project.status]}
+                  {PROJECT_STATUS_LABELS[project.status]}
                 </span>
               </div>
               {project.description && (

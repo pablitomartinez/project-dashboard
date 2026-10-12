@@ -137,7 +137,9 @@ Consecuencia: la protección de los datos depende de que la aplicación desplega
 - `src/lib/supabase/server.ts` crea el cliente Supabase con `SUPABASE_URL` y `SUPABASE_SECRET_KEY`. Importa `server-only`, por lo que el build falla si se importa desde un Client Component.
 - `src/lib/projects.ts` (también `server-only`) contiene las consultas. Ante un error registra solo el código en el log del servidor y lanza un error genérico.
 - Las variables se documentan en `.env.example`; los valores reales van en `.env.local` (ignorado por Git) o en las variables de entorno de Vercel.
-- No hay Route Handlers ni Server Actions que expongan datos u operaciones con la clave secret.
+- `src/lib/project-input.ts` valida los datos del formulario de proyectos. Es código puro, sin `server-only`, y se testea con `npm test` (`node --test`).
+- `src/app/actions.ts` define la Server Action `createProjectAction`. Valida en el servidor y luego llama a `createProject` (`src/lib/projects.ts`), que inserta con `progress_mode = manual`. Al terminar ejecuta `revalidatePath("/")`.
+- **Solo uso local.** Cualquiera que pueda acceder a la aplicación puede invocar una Server Action con un POST directo, aunque no use la interfaz. No haber login no es una protección: mientras no exista control de acceso, la aplicación solo puede ejecutarse localmente y no se debe desplegar ni exponer en una red. No hay Route Handlers.
 
 ### Desarrollo local
 

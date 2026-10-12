@@ -17,7 +17,7 @@ Objetivo: recuperar rápidamente el contexto necesario para continuar un proyect
 
 - [ ] Dashboard de proyectos
   - [x] Listado de proyectos (solo lectura, ordenado por `updated_at`)
-- [ ] Crear proyecto
+- [x] Crear proyecto (Server Action con validación en servidor; solo uso local hasta tener protección de acceso)
 - [ ] Editar proyecto
 - [ ] Eliminar proyecto
 - [ ] Estados active / paused / completed
