@@ -42,7 +42,7 @@ export type CreateProjectFieldErrors = Partial<Record<CreateProjectField, string
 
 export type CreateProjectState =
   | { status: "idle" }
-  | { status: "success"; message: string }
+  | { status: "success"; message: string; values?: CreateProjectValues }
   | {
       status: "error";
       message: string;
@@ -82,6 +82,17 @@ function isHttpUrl(value: string): boolean {
 
 function isProjectStatus(value: string): value is ProjectStatus {
   return (PROJECT_STATUSES as readonly string[]).includes(value);
+}
+
+export function isProjectId(value: unknown): value is string {
+  return typeof value === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+}
+
+export function projectInputValues(input: CreateProjectInput): CreateProjectValues {
+  return Object.fromEntries(
+    CREATE_PROJECT_FIELDS.map((field) => [field, String(input[field] ?? "")]),
+  ) as CreateProjectValues;
 }
 
 export function parseCreateProjectInput(

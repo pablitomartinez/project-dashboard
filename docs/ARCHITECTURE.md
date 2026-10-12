@@ -141,6 +141,12 @@ Consecuencia: la protección de los datos depende de que la aplicación desplega
 - `src/app/actions.ts` define la Server Action `createProjectAction`. Valida en el servidor y luego llama a `createProject` (`src/lib/projects.ts`), que inserta con `progress_mode = manual`. Al terminar ejecuta `revalidatePath("/")`.
 - **Solo uso local.** Cualquiera que pueda acceder a la aplicación puede invocar una Server Action con un POST directo, aunque no use la interfaz. No haber login no es una protección: mientras no exista control de acceso, la aplicación solo puede ejecutarse localmente y no se debe desplegar ni exponer en una red. No hay Route Handlers.
 
+La edición desde el dashboard reutiliza el formulario y la validación de creación.
+`updateProjectAction` valida el UUID y los campos en el servidor, actualiza solo
+los campos editables y revalida `/`. Conserva `progress_mode` y detecta proyectos
+inexistentes. Los errores conservan los valores ingresados; al guardar se muestran
+los valores guardados y una confirmación. No cambia el esquema de Supabase.
+
 ### Desarrollo local
 
 Requiere Docker y la [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started).

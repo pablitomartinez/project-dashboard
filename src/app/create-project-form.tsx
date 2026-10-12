@@ -1,16 +1,26 @@
 "use client";
 
-import { useActionState, useEffect, useRef, type ReactNode } from "react";
+import {
+  createContext, useContext, useId, useActionState, useEffect, useRef,
+  type ReactNode,
+} from "react";
 
-import { createProjectAction } from "@/app/actions";
+import { createProjectAction, updateProjectAction } from "@/app/actions";
 import {
   PROJECT_STATUS_LABELS,
   PROJECT_STATUSES,
+  projectInputValues,
+  type CreateProjectInput,
+  type CreateProjectValues,
   type CreateProjectField,
   type CreateProjectState,
 } from "@/lib/project-input";
 
 const initialState: CreateProjectState = { status: "idle" };
+const FieldDefaults = createContext<{
+  prefix: string;
+  values?: CreateProjectValues;
+}>({ prefix: "project" });
 
 const inputClass =
   "w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm aria-invalid:border-red-500 dark:border-zinc-700 dark:bg-zinc-950";
@@ -31,9 +41,12 @@ type FieldProps = {
 };
 
 function Field({ name, label, state, className, children }: FieldProps) {
-  const id = `project-${name}`;
+  const defaults = useContext(FieldDefaults);
+  const id = `${defaults.prefix}-${name}`;
   const error = state.status === "error" ? state.fieldErrors[name] : undefined;
-  const defaultValue = state.status === "error" ? state.values[name] : "";
+  const defaultValue = state.status === "error"
+    ? state.values[name]
+    : defaults.values?.[name] ?? "";
 
   return (
     <div className={`flex flex-col gap-1 ${className ?? ""}`}>
@@ -58,9 +71,18 @@ function Field({ name, label, state, className, children }: FieldProps) {
 }
 
 export function CreateProjectForm() {
+  return <ProjectForm />;
+}
+
+export function EditProjectForm({ project }: { project: CreateProjectInput & { id: string } }) {
+  return <ProjectForm project={project} />;
+}
+
+function ProjectForm({ project }: { project?: CreateProjectInput & { id: string } }) {
+  const prefix = useId();
   const formRef = useRef<HTMLFormElement>(null);
   const [state, formAction, pending] = useActionState(
-    createProjectAction,
+    project ? updateProjectAction.bind(null, project.id) : createProjectAction,
     initialState,
   );
 
@@ -70,10 +92,18 @@ export function CreateProjectForm() {
     }
   }, [state]);
 
-  return (
-    <details className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-      <summary className="cursor-pointer font-medium">Nuevo proyecto</summary>
+  const defaultValues = project
+    ? (state.status === "success" ? state.values : undefined) ?? projectInputValues(project)
+    : undefined;
 
+  return (
+    <FieldDefaults.Provider value={{ prefix, values: defaultValues }}>
+    <details className={project
+      ? "mt-3 border-t border-zinc-200 pt-3 dark:border-zinc-800"
+      : "rounded-lg border border-zinc-200 p-4 dark:border-zinc-800"}>
+      <summary className="cursor-pointer font-medium">
+        {project ? "Editar proyecto" : "Nuevo proyecto"}
+      </summary>
       <form
         ref={formRef}
         action={formAction}
@@ -143,7 +173,7 @@ export function CreateProjectForm() {
               type="submit"
               className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900"
             >
-              {pending ? "Creando..." : "Crear proyecto"}
+              {pending ? (project ? "Guardando..." : "Creando...") : (project ? "Guardar cambios" : "Crear proyecto")}
             </button>
             {state.status === "error" && (
               <p role="alert" className="text-sm text-red-700 dark:text-red-400">
@@ -159,5 +189,6 @@ export function CreateProjectForm() {
         </fieldset>
       </form>
     </details>
+    </FieldDefaults.Provider>
   );
 }

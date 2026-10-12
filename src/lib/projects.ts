@@ -50,3 +50,19 @@ export async function createProject(input: CreateProjectInput): Promise<void> {
     throw new Error("Could not create project.");
   }
 }
+
+export async function updateProject(id: string, input: CreateProjectInput): Promise<boolean> {
+  const { data, error } = await getSupabaseServerClient()
+    .from("projects")
+    .update(input)
+    .eq("id", id)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    console.error("updateProject failed", { code: error.code });
+    throw new Error("Could not update project.");
+  }
+
+  return data !== null;
+}

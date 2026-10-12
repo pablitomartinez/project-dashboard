@@ -1,6 +1,6 @@
 import { connection } from "next/server";
 
-import { CreateProjectForm } from "@/app/create-project-form";
+import { CreateProjectForm, EditProjectForm } from "@/app/create-project-form";
 import { PROJECT_STATUS_LABELS } from "@/lib/project-input";
 import { listProjects, type Project } from "@/lib/projects";
 
@@ -42,16 +42,17 @@ export default async function Home() {
               className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800"
             >
               <div className="flex items-center justify-between gap-3">
-                <h2 className="font-medium">{project.name}</h2>
+                <h2 className="min-w-0 break-words font-medium">{project.name}</h2>
                 <span className="shrink-0 text-xs text-zinc-600 dark:text-zinc-400">
                   {PROJECT_STATUS_LABELS[project.status]}
                 </span>
               </div>
               {project.description && (
-                <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                <p className="mt-1 break-words text-sm text-zinc-600 dark:text-zinc-400">
                   {project.description}
                 </p>
               )}
+              <EditProjectForm project={project} />
             </li>
           ))}
         </ul>

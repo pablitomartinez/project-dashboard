@@ -4,9 +4,10 @@ import { revalidatePath } from "next/cache";
 
 import {
   parseCreateProjectInput,
+  isProjectId,
   type CreateProjectState,
 } from "@/lib/project-input";
-import { createProject } from "@/lib/projects";
+import { createProject, updateProject } from "@/lib/projects";
 
 // Reachable by direct POST from anyone who can reach the app. There is no access
 // control yet, so the app must only run locally (see docs/ARCHITECTURE.md).
@@ -37,4 +38,42 @@ export async function createProjectAction(
 
   revalidatePath("/");
   return { status: "success", message: `Proyecto "${parsed.data.name}" creado.` };
+}
+
+export async function updateProjectAction(
+  id: string,
+  _previousState: CreateProjectState,
+  formData: FormData,
+): Promise<CreateProjectState> {
+  const parsed = parseCreateProjectInput(formData);
+  if (!parsed.success || !isProjectId(id)) {
+    return {
+      status: "error",
+      message: isProjectId(id) ? "Revisá los campos marcados." : "Proyecto inválido.",
+      fieldErrors: parsed.success ? {} : parsed.fieldErrors,
+      values: parsed.values,
+    };
+  }
+
+  try {
+    const updated = await updateProject(id, parsed.data);
+    if (!updated) {
+      return {
+        status: "error",
+        message: "El proyecto ya no existe. Actualizá la página.",
+        fieldErrors: {},
+        values: parsed.values,
+      };
+    }
+  } catch {
+    return {
+      status: "error",
+      message: "No se pudo guardar el proyecto. Intentá de nuevo más tarde.",
+      fieldErrors: {},
+      values: parsed.values,
+    };
+  }
+
+  revalidatePath("/");
+  return { status: "success", message: "Cambios guardados.", values: parsed.values };
 }
