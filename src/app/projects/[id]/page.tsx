@@ -2,9 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { ProjectFeedback } from "@/app/create-project-form";
+import { ProjectProgressBar } from "@/app/project-progress";
 import { CreateTaskForm } from "@/app/projects/[id]/create-task-form";
 import { TaskItem } from "@/app/projects/[id]/task-item";
 import { isProjectId, PROJECT_STATUS_LABELS } from "@/lib/project-input";
+import { projectProgress } from "@/lib/project-progress";
 import { getProject, type Project } from "@/lib/projects";
 import { countTasks } from "@/lib/task-input";
 import { listTasks, type Task } from "@/lib/tasks";
@@ -53,6 +55,7 @@ export default async function ProjectPage({ params }: PageProps<"/projects/[id]"
 
   const [project, tasks] = loaded as [Project, Task[]];
   const { pending: pendingCount, completed: completedCount } = countTasks(tasks);
+  const taskCounts = { total: tasks.length, completed: completedCount };
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-10 sm:px-6">
@@ -71,6 +74,7 @@ export default async function ProjectPage({ params }: PageProps<"/projects/[id]"
             {project.description}
           </p>
         )}
+        <ProjectProgressBar progress={projectProgress(project, taskCounts)} counts={taskCounts} />
       </header>
 
       <section

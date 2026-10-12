@@ -14,6 +14,12 @@ import { createTask, deleteTask, setTaskCompleted, updateTaskTitle } from "@/lib
 
 const TASK_MISSING = "La tarea ya no existe. Se actualizó la lista.";
 
+// Task changes alter the progress shown on the dashboard and on the detail page.
+function revalidateProgress(projectId: string) {
+  revalidatePath(`/projects/${projectId}`);
+  revalidatePath("/");
+}
+
 // Reachable by direct POST from anyone who can reach the app. There is no access
 // control yet, so the app must only run locally (see docs/ARCHITECTURE.md).
 export async function createTaskAction(
@@ -40,7 +46,7 @@ export async function createTaskAction(
     };
   }
 
-  revalidatePath(`/projects/${projectId}`);
+  revalidateProgress(projectId);
   if (!created) {
     return {
       status: "error",
@@ -71,7 +77,7 @@ export async function toggleTaskAction(
     };
   }
 
-  revalidatePath(`/projects/${projectId}`);
+  revalidateProgress(projectId);
   if (!updated) {
     return { status: "error", message: TASK_MISSING, taskMissing: true };
   }
@@ -128,7 +134,7 @@ export async function deleteTaskAction(
     };
   }
 
-  revalidatePath(`/projects/${projectId}`);
+  revalidateProgress(projectId);
   if (!deleted) {
     return { status: "error", message: TASK_MISSING, taskMissing: true };
   }

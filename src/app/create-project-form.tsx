@@ -7,6 +7,8 @@ import {
 
 import { createProjectAction, updateProjectAction } from "@/app/actions";
 import {
+  PROGRESS_MODE_LABELS,
+  PROGRESS_MODES,
   PROJECT_STATUS_LABELS,
   PROJECT_STATUSES,
   projectInputValues,
@@ -97,6 +99,64 @@ function Field({ name, label, state, className, children }: FieldProps) {
   );
 }
 
+// New projects always start in manual mode; the mode is chosen when editing.
+// In tasks mode manual_progress stays read-only and the server keeps its stored value.
+function ProgressFields({ state, showMode }: { state: CreateProjectState; showMode: boolean }) {
+  const defaults = useContext(FieldDefaults);
+  const initialMode = (state.status === "error"
+    ? state.values.progress_mode
+    : defaults.values?.progress_mode) || "manual";
+  const [mode, setMode] = useState(initialMode);
+  const fromTasks = showMode && mode === "tasks";
+  const hintId = `${defaults.prefix}-manual_progress-hint`;
+
+  return (
+    <>
+      {showMode && (
+        <Field name="progress_mode" label="Modo de progreso" state={state}>
+          {({ defaultValue, ...props }) => (
+            <select
+              {...props}
+              key={defaultValue || "manual"}
+              defaultValue={defaultValue || "manual"}
+              onChange={(event) => setMode(event.currentTarget.value)}
+            >
+              {PROGRESS_MODES.map((progressMode) => (
+                <option key={progressMode} value={progressMode}>
+                  {PROGRESS_MODE_LABELS[progressMode]}
+                </option>
+              ))}
+            </select>
+          )}
+        </Field>
+      )}
+      <Field name="manual_progress" label="Progreso manual (%)" state={state}>
+        {({ defaultValue, className, ...props }) => (
+          <>
+            <input
+              {...props}
+              aria-describedby={[props["aria-describedby"], fromTasks ? hintId : undefined]
+                .filter(Boolean).join(" ") || undefined}
+              className={`${className} read-only:bg-zinc-100 read-only:text-zinc-500 dark:read-only:bg-zinc-900`}
+              type="number"
+              min={0}
+              max={100}
+              step={1}
+              readOnly={fromTasks}
+              defaultValue={defaultValue || "0"}
+            />
+            {fromTasks && (
+              <p id={hintId} className="text-xs text-zinc-600 dark:text-zinc-400">
+                Se calcula con las tareas. El valor manual se conserva.
+              </p>
+            )}
+          </>
+        )}
+      </Field>
+    </>
+  );
+}
+
 export function CreateProjectForm() {
   return <ProjectForm />;
 }
@@ -176,18 +236,7 @@ function ProjectForm({ project }: { project?: EditableProject }) {
               </select>
             )}
           </Field>
-          <Field name="manual_progress" label="Progreso manual (%)" state={state}>
-            {({ defaultValue, ...props }) => (
-              <input
-                {...props}
-                type="number"
-                min={0}
-                max={100}
-                step={1}
-                defaultValue={defaultValue || "0"}
-              />
-            )}
-          </Field>
+          <ProgressFields state={state} showMode={Boolean(project)} />
           <Field name="local_path" label="Ruta local" state={state} className="sm:col-span-2">
             {(props) => <input {...props} type="text" maxLength={500} />}
           </Field>

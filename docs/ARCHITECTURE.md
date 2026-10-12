@@ -143,8 +143,9 @@ Consecuencia: la protección de los datos depende de que la aplicación desplega
 
 La edición desde el dashboard reutiliza el formulario y la validación de creación.
 `updateProjectAction` valida el UUID y los campos en el servidor, actualiza solo
-los campos editables y revalida `/`. Conserva `progress_mode` y detecta proyectos
-inexistentes. Los errores conservan los valores ingresados; al guardar se muestran
+los campos editables y revalida `/` y `/projects/[id]`. Detecta proyectos
+inexistentes. El modo de progreso (`progress_mode`) solo se elige al editar: los
+proyectos nuevos se crean en modo `manual`. Los errores conservan los valores ingresados; al guardar se muestran
 los valores guardados y una confirmación. No cambia el esquema de Supabase.
 
 Si el proyecto ya no existe, la action también revalida el listado para retirar
@@ -195,8 +196,25 @@ título gana.
 
 Todas revalidan `/projects/[id]`. El checkbox muestra siempre el valor persistido:
 cambia recién cuando el servidor confirma. Ante un error conserva el estado anterior.
-No se modifica el cálculo de progreso. Como el resto de las Server Actions, solo son
-aptas para uso local.
+Crear, completar y eliminar tareas también revalida `/`, porque cambian el progreso
+del dashboard. Como el resto de las Server Actions, solo son aptas para uso local.
+
+### Progreso del proyecto
+
+`src/lib/project-progress.ts` (código puro, testeado con `npm test`) calcula el
+progreso que muestran el dashboard y `/projects/[id]` con la misma función:
+
+- `progress_mode = manual`: se muestra `manual_progress`.
+- `progress_mode = tasks`: `round(completadas * 100 / total)`; sin tareas es 0 %.
+
+El porcentaje por tareas se calcula en cada render y nunca se guarda. El dashboard
+obtiene los conteos de todos los proyectos en la misma consulta de `listProjects`
+(dos embeds agregados `tasks(count)`, uno filtrado por `completed = true`), sin
+consultas N+1. El detalle usa las tareas que ya lista la página.
+
+En el formulario de edición, con modo `tasks` el campo `manual_progress` queda de
+solo lectura y `updateProject` no lo escribe, así que el valor manual se conserva al
+cambiar entre modos. El progreso no cambia `projects.status`.
 
 ### Desarrollo local
 

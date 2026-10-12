@@ -10,10 +10,19 @@ export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
   completed: "Terminado",
 };
 
+export const PROGRESS_MODES = ["manual", "tasks"] as const;
+export type ProgressMode = (typeof PROGRESS_MODES)[number];
+
+export const PROGRESS_MODE_LABELS: Record<ProgressMode, string> = {
+  manual: "Manual",
+  tasks: "Por tareas",
+};
+
 export const CREATE_PROJECT_FIELDS = [
   "name",
   "description",
   "status",
+  "progress_mode",
   "manual_progress",
   "local_path",
   "repository_url",
@@ -28,6 +37,7 @@ export type CreateProjectInput = {
   name: string;
   description: string | null;
   status: ProjectStatus;
+  progress_mode: ProgressMode;
   manual_progress: number;
   local_path: string | null;
   repository_url: string | null;
@@ -69,6 +79,7 @@ const MAX_LENGTH: Record<CreateProjectField, number> = {
   name: 120,
   description: 500,
   status: 20,
+  progress_mode: 20,
   manual_progress: 3,
   local_path: 500,
   repository_url: 2000,
@@ -89,6 +100,10 @@ function isHttpUrl(value: string): boolean {
 
 function isProjectStatus(value: string): value is ProjectStatus {
   return (PROJECT_STATUSES as readonly string[]).includes(value);
+}
+
+function isProgressMode(value: string): value is ProgressMode {
+  return (PROGRESS_MODES as readonly string[]).includes(value);
 }
 
 export function isProjectId(value: unknown): value is string {
@@ -140,6 +155,11 @@ export function parseCreateProjectInput(
     fieldErrors.status = "Estado inválido.";
   }
 
+  const progressMode = values.progress_mode || "manual";
+  if (!isProgressMode(progressMode)) {
+    fieldErrors.progress_mode = "Modo de progreso inválido.";
+  }
+
   let manualProgress = 0;
   if (values.manual_progress) {
     manualProgress = Number(values.manual_progress);
@@ -158,7 +178,11 @@ export function parseCreateProjectInput(
     }
   }
 
-  if (Object.keys(fieldErrors).length > 0 || !isProjectStatus(status)) {
+  if (
+    Object.keys(fieldErrors).length > 0 ||
+    !isProjectStatus(status) ||
+    !isProgressMode(progressMode)
+  ) {
     return { success: false, fieldErrors, values: enteredValues };
   }
 
@@ -171,6 +195,7 @@ export function parseCreateProjectInput(
       name: values.name,
       description: optional("description"),
       status,
+      progress_mode: progressMode,
       manual_progress: manualProgress,
       local_path: optional("local_path"),
       repository_url: optional("repository_url"),

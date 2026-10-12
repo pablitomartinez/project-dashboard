@@ -46,7 +46,7 @@ test("missing project returns an error and invalidates the dashboard", async () 
     assert.match(state.message, /ya no existe/);
     assert.equal(state.projectMissing, true);
   }
-  assert.deepEqual(harness.revalidated, ["/"]);
+  assert.deepEqual(harness.revalidated, [`/projects/${id}`, "/"]);
 });
 
 test("success returns the normalized saved row and its version", async () => {
@@ -65,7 +65,7 @@ test("success returns the normalized saved row and its version", async () => {
     assert.equal(state.values?.status, "active");
     assert.equal(state.projectVersion, savedVersion);
   }
-  assert.deepEqual(harness.revalidated, ["/"]);
+  assert.deepEqual(harness.revalidated, [`/projects/${id}`, "/"]);
 });
 
 test("validation errors preserve exact input and never call the database", async () => {

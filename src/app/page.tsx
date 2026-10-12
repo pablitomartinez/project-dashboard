@@ -3,13 +3,15 @@ import { connection } from "next/server";
 
 import { CreateProjectForm, EditProjectForm, ProjectFeedback } from "@/app/create-project-form";
 import { DeleteProjectForm } from "@/app/delete-project-form";
+import { ProjectProgressBar } from "@/app/project-progress";
 import { PROJECT_STATUS_LABELS } from "@/lib/project-input";
-import { listProjects, type Project } from "@/lib/projects";
+import { projectProgress } from "@/lib/project-progress";
+import { listProjects, type ProjectWithTaskCounts } from "@/lib/projects";
 
 export default async function Home() {
   await connection();
 
-  let projects: Project[] | null = null;
+  let projects: ProjectWithTaskCounts[] | null = null;
   try {
     projects = await listProjects();
   } catch (error) {
@@ -59,6 +61,12 @@ export default async function Home() {
                   {project.description}
                 </p>
               )}
+              <div className="mt-3">
+                <ProjectProgressBar
+                  progress={projectProgress(project, project.task_counts)}
+                  counts={project.task_counts}
+                />
+              </div>
               <EditProjectForm project={project} />
               <DeleteProjectForm project={project} />
             </li>

@@ -107,7 +107,7 @@ test("create: associates the trimmed title with the project and refreshes its pa
   const state = await harness.createTaskAction(projectId, { status: "idle" }, titleForm("  Deploy  "));
   assert.equal(state.status, "success");
   assert.deepEqual([...harness.calls.map((call) => [...call])], [["createTask", projectId, "Deploy"]]);
-  assert.deepEqual([...harness.revalidated], [`/projects/${projectId}`]);
+  assert.deepEqual([...harness.revalidated], [`/projects/${projectId}`, "/"]);
 });
 
 test("create: invalid title or project id never reaches the database", async () => {
@@ -138,7 +138,7 @@ test("create: missing project and database errors keep the entered title", async
     assert.equal(state.projectMissing, true);
     assert.equal(state.title, "Task");
   }
-  assert.deepEqual([...missing.revalidated], [`/projects/${projectId}`]);
+  assert.deepEqual([...missing.revalidated], [`/projects/${projectId}`, "/"]);
 
   const failing = actions({ createTask: async () => { throw new Error("private detail"); } });
   const failed = await failing.createTaskAction(projectId, { status: "idle" }, titleForm("Task"));
@@ -158,7 +158,7 @@ test("toggle: persists the new value for the task of that project", async () => 
     ["setTaskCompleted", projectId, taskId, true],
     ["setTaskCompleted", projectId, taskId, false],
   ]);
-  assert.deepEqual([...harness.revalidated], [`/projects/${projectId}`, `/projects/${projectId}`]);
+  assert.deepEqual([...harness.revalidated], [`/projects/${projectId}`, "/", `/projects/${projectId}`, "/"]);
 });
 
 test("toggle: invalid ids or non-boolean values never reach the database", async () => {
@@ -179,7 +179,7 @@ test("toggle: a task outside the project is reported as missing; database errors
   const state = await missing.toggleTaskAction(projectId, taskId, true);
   assert.equal(state.status, "error");
   if (state.status === "error") assert.equal(state.taskMissing, true);
-  assert.deepEqual([...missing.revalidated], [`/projects/${projectId}`]);
+  assert.deepEqual([...missing.revalidated], [`/projects/${projectId}`, "/"]);
 
   const failing = actions({ setTaskCompleted: async () => { throw new Error("private detail"); } });
   const failed = await failing.toggleTaskAction(projectId, taskId, true);
@@ -299,7 +299,7 @@ test("delete: removes the task of that project and refreshes its page", async ()
   const state = await harness.deleteTaskAction(projectId, taskId);
   assert.deepEqual({ ...state }, { status: "success", message: "Tarea eliminada." });
   assert.deepEqual(harness.calls.map((call) => [...call]), [["deleteTask", projectId, taskId]]);
-  assert.deepEqual([...harness.revalidated], [`/projects/${projectId}`]);
+  assert.deepEqual([...harness.revalidated], [`/projects/${projectId}`, "/"]);
 });
 
 test("delete: a missing task or one from another project is reported; database errors stay generic", async () => {
@@ -307,7 +307,7 @@ test("delete: a missing task or one from another project is reported; database e
   const state = await missing.deleteTaskAction(projectId, taskId);
   assert.equal(state.status, "error");
   if (state.status === "error") assert.equal(state.taskMissing, true);
-  assert.deepEqual([...missing.revalidated], [`/projects/${projectId}`]);
+  assert.deepEqual([...missing.revalidated], [`/projects/${projectId}`, "/"]);
 
   const failing = actions({ deleteTask: async () => { throw new Error("private detail"); } });
   const failed = await failing.deleteTaskAction(projectId, taskId);

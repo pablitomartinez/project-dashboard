@@ -12,7 +12,7 @@ test("edit: validates project identifiers before updating", () => {
 test("edit: prefilled values round-trip, including null fields and zero progress", () => {
   const input = {
     name: "Dashboard", description: null, status: "paused" as const,
-    manual_progress: 0, local_path: "C:\\projects", repository_url: "https://github.com/example/repo",
+    progress_mode: "tasks" as const, manual_progress: 0, local_path: "C:\\projects", repository_url: "https://github.com/example/repo",
     production_url: null, branch: "develop", stack: "Next.js", notes: "Pending work",
   };
   const values = projectInputValues(input);
@@ -21,7 +21,6 @@ test("edit: prefilled values round-trip, including null fields and zero progress
   const form = new FormData();
   for (const [field, value] of Object.entries(values)) form.set(field, value);
   form.set("id", "ignored");
-  form.set("progress_mode", "tasks");
   const result = parseCreateProjectInput(form);
   assert.equal(result.success, true);
   if (result.success) assert.deepEqual(result.data, input);

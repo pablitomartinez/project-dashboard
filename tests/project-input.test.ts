@@ -16,6 +16,7 @@ test("only name: applies defaults and nulls optional fields", () => {
       name: "Dashboard",
       description: null,
       status: "active",
+      progress_mode: "manual",
       manual_progress: 0,
       local_path: null,
       repository_url: null,
