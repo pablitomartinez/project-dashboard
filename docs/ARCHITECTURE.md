@@ -199,6 +199,28 @@ cambia recién cuando el servidor confirma. Ante un error conserva el estado ant
 Crear, completar y eliminar tareas también revalida `/`, porque cambian el progreso
 del dashboard. Como el resto de las Server Actions, solo son aptas para uso local.
 
+### Recursos del proyecto
+
+`/projects/[id]` también muestra la sección "Recursos" (filas de `project_resources`,
+independientes de `repository_url` y `production_url` del proyecto).
+`src/lib/resources.ts` (`server-only`) lista los recursos del proyecto por
+`created_at`. `src/lib/resource-input.ts` (código puro) valida el formulario: nombre
+(`label`) obligatorio, sin solo espacios, máximo 120 caracteres; URL obligatoria,
+absoluta, con `http://` o `https://` (rechaza `javascript:`, `data:` y cualquier otro
+protocolo) y máximo 2000 caracteres. `src/app/resource-actions.ts` define
+`createResourceAction`, `updateResourceAction` y `deleteResourceAction`:
+
+- Validan los UUID de proyecto y recurso y los campos antes de consultar Supabase.
+- Escriben solo `label` y `url`; `type` queda en su valor por defecto (`other`) y
+  `account` y `notes` no se modifican.
+- Editar y eliminar filtran por `id` y `project_id`. Si el recurso no existe o es de
+  otro proyecto, no se modifica nada y se informa como recurso inexistente.
+- Revalidan `/projects/[id]`. No revalidan `/` porque los recursos no cambian el
+  dashboard ni el progreso.
+
+Los enlaces se abren con `target="_blank"` y `rel="noopener noreferrer"`. Cancelar la
+edición o la eliminación es local y no ejecuta ninguna Server Action.
+
 ### Progreso del proyecto
 
 `src/lib/project-progress.ts` (código puro, testeado con `npm test`) calcula el
