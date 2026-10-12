@@ -6,9 +6,13 @@ import { isProjectId as isUuid } from "@/lib/project-input";
 import {
   parseTaskTitle,
   type CreateTaskState,
+  type DeleteTaskState,
+  type EditTaskState,
   type ToggleTaskState,
 } from "@/lib/task-input";
-import { createTask, setTaskCompleted } from "@/lib/tasks";
+import { createTask, deleteTask, setTaskCompleted, updateTaskTitle } from "@/lib/tasks";
+
+const TASK_MISSING = "La tarea ya no existe. Se actualizó la lista.";
 
 // Reachable by direct POST from anyone who can reach the app. There is no access
 // control yet, so the app must only run locally (see docs/ARCHITECTURE.md).
@@ -69,11 +73,64 @@ export async function toggleTaskAction(
 
   revalidatePath(`/projects/${projectId}`);
   if (!updated) {
-    return {
-      status: "error",
-      message: "La tarea ya no existe. Se actualizó la lista.",
-      taskMissing: true,
-    };
+    return { status: "error", message: TASK_MISSING, taskMissing: true };
   }
   return { status: "success" };
+}
+
+export async function updateTaskTitleAction(
+  projectId: unknown,
+  taskId: unknown,
+  _previousState: EditTaskState,
+  formData: FormData,
+): Promise<EditTaskState> {
+  const parsed = parseTaskTitle(formData);
+  if (!isUuid(projectId) || !isUuid(taskId)) {
+    return { status: "error", message: "Tarea inválida.", title: parsed.title };
+  }
+  if (!parsed.success) {
+    return { status: "error", message: parsed.error, title: parsed.title, invalidTitle: true };
+  }
+
+  let updated;
+  try {
+    updated = await updateTaskTitle(projectId, taskId, parsed.title);
+  } catch {
+    return {
+      status: "error",
+      message: "No se pudo guardar la tarea. Intentá de nuevo más tarde.",
+      title: parsed.title,
+    };
+  }
+
+  revalidatePath(`/projects/${projectId}`);
+  if (!updated) {
+    return { status: "error", message: TASK_MISSING, title: parsed.title, taskMissing: true };
+  }
+  return { status: "success" };
+}
+
+export async function deleteTaskAction(
+  projectId: unknown,
+  taskId: unknown,
+): Promise<DeleteTaskState> {
+  if (!isUuid(projectId) || !isUuid(taskId)) {
+    return { status: "error", message: "Tarea inválida." };
+  }
+
+  let deleted;
+  try {
+    deleted = await deleteTask(projectId, taskId);
+  } catch {
+    return {
+      status: "error",
+      message: "No se pudo eliminar la tarea. Intentá de nuevo más tarde.",
+    };
+  }
+
+  revalidatePath(`/projects/${projectId}`);
+  if (!deleted) {
+    return { status: "error", message: TASK_MISSING, taskMissing: true };
+  }
+  return { status: "success", message: "Tarea eliminada." };
 }

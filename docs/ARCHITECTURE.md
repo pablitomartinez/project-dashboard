@@ -183,7 +183,17 @@ defecto (0), así que quedan al final por `created_at`. `src/app/task-actions.ts
   filtrando por `id` y `project_id`, así que una tarea solo se puede modificar a
   través de su propio proyecto.
 
-Ambas revalidan `/projects/[id]`. El checkbox muestra siempre el valor persistido:
+- `updateTaskTitleAction`: valida ambos UUID y el título con las mismas reglas que
+  la creación. Escribe solo `title`, así que no pisa `completed` (aunque otra pestaña
+  lo haya cambiado). Ante un error conserva el texto ingresado.
+- `deleteTaskAction`: valida ambos UUID y elimina tras una confirmación explícita.
+
+Las tres operaciones sobre tareas existentes filtran por `id` y `project_id`.
+Si la tarea no existe o pertenece a otro proyecto, no se modifica nada: se informa
+como tarea inexistente y se revalida la lista. Entre pestañas, la última edición del
+título gana.
+
+Todas revalidan `/projects/[id]`. El checkbox muestra siempre el valor persistido:
 cambia recién cuando el servidor confirma. Ante un error conserva el estado anterior.
 No se modifica el cálculo de progreso. Como el resto de las Server Actions, solo son
 aptas para uso local.

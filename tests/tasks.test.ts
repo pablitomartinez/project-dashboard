@@ -29,6 +29,8 @@ function load(path: string, modules: Record<string, unknown>) {
 type Tasks = {
   createTask: (projectId: string, title: string) => Promise<boolean>;
   setTaskCompleted: (projectId: string, taskId: string, completed: boolean) => Promise<unknown>;
+  updateTaskTitle: (projectId: string, taskId: string, title: string) => Promise<unknown>;
+  deleteTask: (projectId: string, taskId: string) => Promise<unknown>;
 };
 
 // Runs the real Server Actions with Next and the data layer replaced.
@@ -45,10 +47,14 @@ function actions(tasks: Partial<Tasks>) {
     "next/cache": { revalidatePath: (path: string) => revalidated.push(path) },
     "@/lib/project-input": projectInput,
     "@/lib/task-input": taskInput,
-    "@/lib/tasks": { createTask: record("createTask"), setTaskCompleted: record("setTaskCompleted") },
+    "@/lib/tasks": Object.fromEntries(
+      (["createTask", "setTaskCompleted", "updateTaskTitle", "deleteTask"] as const).map((name) => [name, record(name)]),
+    ),
   }) as {
     createTaskAction: (id: unknown, state: taskInput.CreateTaskState, form: FormData) => Promise<taskInput.CreateTaskState>;
     toggleTaskAction: (projectId: unknown, taskId: unknown, completed: unknown) => Promise<taskInput.ToggleTaskState>;
+    updateTaskTitleAction: (projectId: unknown, taskId: unknown, state: taskInput.EditTaskState, form: FormData) => Promise<taskInput.EditTaskState>;
+    deleteTaskAction: (projectId: unknown, taskId: unknown) => Promise<taskInput.DeleteTaskState>;
   };
   return { ...exports, revalidated, calls };
 }
@@ -221,4 +227,132 @@ test("data: update filters by task id and project id", async () => {
   ]));
   assert.equal(await dataLayer({ data: null }).setTaskCompleted(projectId, taskId, true), null);
   await assert.rejects(dataLayer({ error: { code: "42501" } }).setTaskCompleted(projectId, taskId, true), /Could not update task/);
+});
+
+test("edit: saves the trimmed title for the task of that project", async () => {
+  const harness = actions({ updateTaskTitle: async () => ({ id: taskId }) });
+  const state = await harness.updateTaskTitleAction(projectId, taskId, { status: "idle" }, titleForm("  Renamed  "));
+  assert.deepEqual({ ...state }, { status: "success" });
+  assert.deepEqual(harness.calls.map((call) => [...call]), [["updateTaskTitle", projectId, taskId, "Renamed"]]);
+  assert.deepEqual([...harness.revalidated], [`/projects/${projectId}`]);
+});
+
+test("edit: blank, too long or missing titles keep the entered text and never reach the database", async () => {
+  const harness = actions({});
+  const long = "x".repeat(taskInput.TASK_TITLE_MAX_LENGTH + 1);
+  for (const [title, expected] of [["   ", "   "], [long, long], [undefined, ""]] as const) {
+    const state = await harness.updateTaskTitleAction(projectId, taskId, { status: "idle" }, titleForm(title));
+    assert.equal(state.status, "error");
+    if (state.status === "error") {
+      assert.equal(state.invalidTitle, true);
+      assert.equal(state.title, expected);
+    }
+  }
+  assert.equal(harness.calls.length, 0);
+  assert.equal(harness.revalidated.length, 0);
+});
+
+test("edit and delete: invalid project or task ids never reach the database", async () => {
+  const harness = actions({});
+  for (const id of invalidIds) {
+    for (const [p, t] of [[id, taskId], [projectId, id]]) {
+      const edited = await harness.updateTaskTitleAction(p, t, { status: "idle" }, titleForm("Task"));
+      assert.equal(edited.status, "error");
+      if (edited.status === "error") {
+        assert.equal(edited.message, "Tarea inválida.");
+        assert.equal(edited.title, "Task");
+      }
+      const deleted = await harness.deleteTaskAction(p, t);
+      assert.equal(deleted.status, "error");
+      if (deleted.status === "error") assert.equal(deleted.message, "Tarea inválida.");
+    }
+  }
+  assert.equal(harness.calls.length, 0);
+  assert.equal(harness.revalidated.length, 0);
+});
+
+test("edit: a missing task or one from another project is reported and refreshes the list", async () => {
+  const harness = actions({ updateTaskTitle: async () => null });
+  const state = await harness.updateTaskTitleAction(projectId, taskId, { status: "idle" }, titleForm("Task"));
+  assert.equal(state.status, "error");
+  if (state.status === "error") {
+    assert.equal(state.taskMissing, true);
+    assert.equal(state.title, "Task");
+  }
+  assert.deepEqual([...harness.revalidated], [`/projects/${projectId}`]);
+});
+
+test("edit: database errors are generic and keep the entered text", async () => {
+  const harness = actions({ updateTaskTitle: async () => { throw new Error("private detail"); } });
+  const state = await harness.updateTaskTitleAction(projectId, taskId, { status: "idle" }, titleForm(" Kept "));
+  assert.equal(state.status, "error");
+  if (state.status === "error") {
+    assert.doesNotMatch(state.message, /private/);
+    assert.equal(state.title, "Kept");
+    assert.equal(state.taskMissing, undefined);
+  }
+  assert.equal(harness.revalidated.length, 0);
+});
+
+test("delete: removes the task of that project and refreshes its page", async () => {
+  const harness = actions({ deleteTask: async () => ({ id: taskId }) });
+  const state = await harness.deleteTaskAction(projectId, taskId);
+  assert.deepEqual({ ...state }, { status: "success", message: "Tarea eliminada." });
+  assert.deepEqual(harness.calls.map((call) => [...call]), [["deleteTask", projectId, taskId]]);
+  assert.deepEqual([...harness.revalidated], [`/projects/${projectId}`]);
+});
+
+test("delete: a missing task or one from another project is reported; database errors stay generic", async () => {
+  const missing = actions({ deleteTask: async () => null });
+  const state = await missing.deleteTaskAction(projectId, taskId);
+  assert.equal(state.status, "error");
+  if (state.status === "error") assert.equal(state.taskMissing, true);
+  assert.deepEqual([...missing.revalidated], [`/projects/${projectId}`]);
+
+  const failing = actions({ deleteTask: async () => { throw new Error("private detail"); } });
+  const failed = await failing.deleteTaskAction(projectId, taskId);
+  assert.equal(failed.status, "error");
+  if (failed.status === "error") {
+    assert.doesNotMatch(failed.message, /private/);
+    assert.equal(failed.taskMissing, undefined);
+  }
+  assert.equal(failing.revalidated.length, 0);
+});
+
+test("data: editing writes only the title, so completed is preserved", async () => {
+  const db = dataLayer({ data: { id: taskId } });
+  assert.deepEqual({ ...(await db.updateTaskTitle(projectId, taskId, "Renamed") as object) }, { id: taskId });
+  assert.equal(JSON.stringify(db.chain), JSON.stringify([
+    ["from", "tasks"],
+    ["update", { title: "Renamed" }],
+    ["eq", "id", taskId],
+    ["eq", "project_id", projectId],
+    ["select", "id"],
+    ["maybeSingle"],
+  ]));
+  assert.equal(await dataLayer({ data: null }).updateTaskTitle(projectId, taskId, "x"), null);
+  await assert.rejects(dataLayer({ error: { code: "42501" } }).updateTaskTitle(projectId, taskId, "x"), /Could not update task/);
+});
+
+test("data: deleting filters by task id and project id", async () => {
+  const db = dataLayer({ data: { id: taskId } });
+  assert.deepEqual({ ...(await db.deleteTask(projectId, taskId) as object) }, { id: taskId });
+  assert.equal(JSON.stringify(db.chain), JSON.stringify([
+    ["from", "tasks"],
+    ["delete"],
+    ["eq", "id", taskId],
+    ["eq", "project_id", projectId],
+    ["select", "id"],
+    ["maybeSingle"],
+  ]));
+  assert.equal(await dataLayer({ data: null }).deleteTask(projectId, taskId), null);
+  await assert.rejects(dataLayer({ error: { code: "42501" } }).deleteTask(projectId, taskId), /Could not delete task/);
+});
+
+test("counters: pending and completed tasks", () => {
+  assert.deepEqual({ ...taskInput.countTasks([]) }, { pending: 0, completed: 0 });
+  const tasks = [{ completed: true }, { completed: false }, { completed: false }];
+  assert.deepEqual({ ...taskInput.countTasks(tasks) }, { pending: 2, completed: 1 });
+  assert.deepEqual({ ...taskInput.countTasks(tasks.slice(1)) }, { pending: 2, completed: 0 });
+  assert.deepEqual({ ...taskInput.countTasks(tasks.map(() => ({ completed: true }))) }, { pending: 0, completed: 3 });
 });

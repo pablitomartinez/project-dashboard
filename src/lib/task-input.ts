@@ -18,6 +18,27 @@ export type ToggleTaskState =
   | { status: "success" }
   | { status: "error"; message: string; taskMissing?: boolean };
 
+export type EditTaskState =
+  | { status: "idle" }
+  | { status: "success" }
+  | {
+      status: "error";
+      message: string;
+      title: string;
+      invalidTitle?: boolean;
+      taskMissing?: boolean;
+    };
+
+export type DeleteTaskState =
+  | { status: "idle" }
+  | { status: "success"; message: string }
+  | { status: "error"; message: string; taskMissing?: boolean };
+
+export function countTasks(tasks: readonly { completed: boolean }[]) {
+  const completed = tasks.filter((task) => task.completed).length;
+  return { pending: tasks.length - completed, completed };
+}
+
 export type ParseTaskTitleResult =
   | { success: true; title: string }
   | { success: false; error: string; title: string };
