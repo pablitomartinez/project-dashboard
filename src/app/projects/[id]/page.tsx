@@ -6,6 +6,7 @@ import { CreateTaskForm } from "@/app/projects/[id]/create-task-form";
 import { TaskItem } from "@/app/projects/[id]/task-item";
 import { isProjectId, PROJECT_STATUS_LABELS } from "@/lib/project-input";
 import { getProject, type Project } from "@/lib/projects";
+import { countTasks } from "@/lib/task-input";
 import { listTasks, type Task } from "@/lib/tasks";
 
 function plural(count: number, singular: string, pluralForm: string) {
@@ -51,8 +52,7 @@ export default async function ProjectPage({ params }: PageProps<"/projects/[id]"
   }
 
   const [project, tasks] = loaded as [Project, Task[]];
-  const completedCount = tasks.filter((task) => task.completed).length;
-  const pendingCount = tasks.length - completedCount;
+  const { pending: pendingCount, completed: completedCount } = countTasks(tasks);
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-10 sm:px-6">

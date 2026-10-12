@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useId, useRef } from "react";
 
+import { useSubmitGuard } from "@/app/projects/[id]/use-submit-guard";
 import { createTaskAction } from "@/app/task-actions";
 import { TASK_TITLE_MAX_LENGTH, type CreateTaskState } from "@/lib/task-input";
 
@@ -15,16 +16,11 @@ export function CreateTaskForm({ projectId }: { projectId: string }) {
     initialState,
   );
 
-  // `pending` updates after a render, so a synchronous second submit needs a ref.
-  const submitting = useRef(false);
+  const onSubmit = useSubmitGuard(pending);
 
   useEffect(() => {
     if (state.status === "success") formRef.current?.reset();
   }, [state]);
-
-  useEffect(() => {
-    if (!pending) submitting.current = false;
-  }, [pending]);
 
   const titleError = state.status === "error" && state.invalidTitle ? state.message : undefined;
 
@@ -32,10 +28,7 @@ export function CreateTaskForm({ projectId }: { projectId: string }) {
     <form
       ref={formRef}
       action={formAction}
-      onSubmit={(event) => {
-        if (pending || submitting.current) event.preventDefault();
-        else submitting.current = true;
-      }}
+      onSubmit={onSubmit}
       noValidate
     >
       <fieldset disabled={pending} className="flex flex-col gap-2">

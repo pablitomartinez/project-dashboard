@@ -47,8 +47,8 @@ export async function createTask(projectId: string, title: string): Promise<bool
   return true;
 }
 
-// Filters by both ids, so a task can only be changed through its own project.
-// Returns null when no task of that project matches.
+// Updates and deletes filter by both ids, so a task can only be changed through
+// its own project. They return null when no task of that project matches.
 export async function setTaskCompleted(
   projectId: string,
   taskId: string,
@@ -65,6 +65,48 @@ export async function setTaskCompleted(
   if (error) {
     console.error("setTaskCompleted failed", { code: error.code });
     throw new Error("Could not update task.");
+  }
+
+  return data;
+}
+
+// Only the title is written, so a concurrent completion change is not overwritten.
+export async function updateTaskTitle(
+  projectId: string,
+  taskId: string,
+  title: string,
+): Promise<Pick<Task, "id"> | null> {
+  const { data, error } = await getSupabaseServerClient()
+    .from("tasks")
+    .update({ title })
+    .eq("id", taskId)
+    .eq("project_id", projectId)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    console.error("updateTaskTitle failed", { code: error.code });
+    throw new Error("Could not update task.");
+  }
+
+  return data;
+}
+
+export async function deleteTask(
+  projectId: string,
+  taskId: string,
+): Promise<Pick<Task, "id"> | null> {
+  const { data, error } = await getSupabaseServerClient()
+    .from("tasks")
+    .delete()
+    .eq("id", taskId)
+    .eq("project_id", projectId)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    console.error("deleteTask failed", { code: error.code });
+    throw new Error("Could not delete task.");
   }
 
   return data;

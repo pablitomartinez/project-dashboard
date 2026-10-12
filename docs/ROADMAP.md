@@ -28,7 +28,8 @@ Objetivo: recuperar rápidamente el contexto necesario para continuar un proyect
 
 - [x] Crear tareas
 - [x] Completar tareas (marcar y desmarcar)
-- [ ] Eliminar tareas
+- [x] Editar título de tareas
+- [x] Eliminar tareas (confirmación explícita)
 - [ ] Ordenar tareas
 - [ ] Calcular progreso mediante tareas
 - [ ] Mostrar siguiente tarea
