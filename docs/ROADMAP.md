@@ -19,7 +19,7 @@ Objetivo: recuperar rápidamente el contexto necesario para continuar un proyect
   - [x] Listado de proyectos (solo lectura, ordenado por `updated_at`)
 - [x] Crear proyecto (Server Action con validación en servidor; solo uso local hasta tener protección de acceso)
 - [x] Editar proyecto (formulario precargado y Server Action con validación)
-- [ ] Eliminar proyecto
+- [x] Eliminar proyecto (confirmación explícita; borra en cascada tareas y recursos)
 - [ ] Estados active / paused / completed
 - [ ] Progreso manual
 - [ ] Detalle de proyecto

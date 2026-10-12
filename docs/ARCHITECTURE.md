@@ -163,6 +163,13 @@ sincroniza. Una mejora separada sería una actualización condicional atómica p
 si no coincide. El uso actual de `updated_at` solo sincroniza la interfaz;
 no se utiliza como condición de escritura ni garantiza protección de concurrencia.
 
+La eliminación pide confirmación explícita en la tarjeta y advierte que también se
+borran las tareas y recursos del proyecto (`on delete cascade`). `deleteProjectAction`
+valida el UUID antes de consultar Supabase, borra con el cliente server-only y
+revalida `/`. Si el proyecto ya no existe, informa el caso y también revalida el
+listado. Los avisos de eliminación se muestran fuera de la tarjeta, que se retira del
+listado. Como el resto de las Server Actions, solo es apta para uso local.
+
 ### Desarrollo local
 
 Requiere Docker y la [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started).
