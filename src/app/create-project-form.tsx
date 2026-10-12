@@ -18,16 +18,30 @@ import {
 } from "@/lib/project-input";
 
 const initialState: CreateProjectState = { status: "idle" };
-const MissingProjectNotice = createContext<(message: string) => void>(() => {});
+type ProjectNotice = { message: string; tone: "error" | "success" };
+const ProjectNoticeContext = createContext<(notice: ProjectNotice) => void>(() => {});
+
+export function useProjectNotice() {
+  return useContext(ProjectNoticeContext);
+}
 
 // This notice survives removal of the project's card during revalidation.
 export function ProjectFeedback({ children }: { children: ReactNode }) {
-  const [message, setMessage] = useState<string | null>(null);
+  const [notice, setNotice] = useState<ProjectNotice | null>(null);
   return (
-    <MissingProjectNotice.Provider value={setMessage}>
-      {message && <p role="alert" className="text-sm text-red-700 dark:text-red-400">{message}</p>}
+    <ProjectNoticeContext.Provider value={setNotice}>
+      {notice && (
+        <p
+          role={notice.tone === "error" ? "alert" : "status"}
+          className={notice.tone === "error"
+            ? "text-sm text-red-700 dark:text-red-400"
+            : "text-sm text-green-700 dark:text-green-400"}
+        >
+          {notice.message}
+        </p>
+      )}
       {children}
-    </MissingProjectNotice.Provider>
+    </ProjectNoticeContext.Provider>
   );
 }
 const FieldDefaults = createContext<{
@@ -94,14 +108,14 @@ export function EditProjectForm({ project }: { project: EditableProject }) {
 }
 
 function ProjectForm({ project }: { project?: EditableProject }) {
-  const reportMissingProject = useContext(MissingProjectNotice);
+  const reportMissingProject = useProjectNotice();
   const prefix = useId();
   const formRef = useRef<HTMLFormElement>(null);
   const [actionState, formAction, pending] = useActionState(
     project ? async (previousState: CreateProjectState, formData: FormData) => {
       const result = await updateProjectAction(project.id, project.updated_at, previousState, formData);
       if (result.status === "error" && result.projectMissing) {
-        reportMissingProject(result.message);
+        reportMissingProject({ message: result.message, tone: "error" });
       }
       return result;
     } : createProjectAction,

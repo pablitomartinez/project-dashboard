@@ -1,6 +1,7 @@
 import { connection } from "next/server";
 
 import { CreateProjectForm, EditProjectForm, ProjectFeedback } from "@/app/create-project-form";
+import { DeleteProjectForm } from "@/app/delete-project-form";
 import { PROJECT_STATUS_LABELS } from "@/lib/project-input";
 import { listProjects, type Project } from "@/lib/projects";
 
@@ -54,6 +55,7 @@ export default async function Home() {
                 </p>
               )}
               <EditProjectForm project={project} />
+              <DeleteProjectForm project={project} />
             </li>
           ))}
         </ul>

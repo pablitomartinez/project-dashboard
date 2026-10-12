@@ -66,3 +66,19 @@ export async function updateProject(id: string, input: CreateProjectInput): Prom
 
   return data as Project | null;
 }
+
+export async function deleteProject(id: string): Promise<Pick<Project, "name"> | null> {
+  const { data, error } = await getSupabaseServerClient()
+    .from("projects")
+    .delete()
+    .eq("id", id)
+    .select("name")
+    .maybeSingle();
+
+  if (error) {
+    console.error("deleteProject failed", { code: error.code });
+    throw new Error("Could not delete project.");
+  }
+
+  return data;
+}

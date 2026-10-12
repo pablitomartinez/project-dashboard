@@ -52,6 +52,11 @@ export type CreateProjectState =
       projectMissing?: boolean;
     };
 
+export type DeleteProjectState =
+  | { status: "idle" }
+  | { status: "success"; message: string }
+  | { status: "error"; message: string; projectMissing?: boolean };
+
 export type ParseCreateProjectResult =
   | { success: true; data: CreateProjectInput; values: CreateProjectValues }
   | {
