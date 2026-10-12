@@ -42,12 +42,14 @@ export type CreateProjectFieldErrors = Partial<Record<CreateProjectField, string
 
 export type CreateProjectState =
   | { status: "idle" }
-  | { status: "success"; message: string }
+  | { status: "success"; message: string; values?: CreateProjectValues; projectVersion?: string }
   | {
       status: "error";
       message: string;
       fieldErrors: CreateProjectFieldErrors;
       values: CreateProjectValues;
+      projectVersion?: string;
+      projectMissing?: boolean;
     };
 
 export type ParseCreateProjectResult =
@@ -84,12 +86,35 @@ function isProjectStatus(value: string): value is ProjectStatus {
   return (PROJECT_STATUSES as readonly string[]).includes(value);
 }
 
+export function isProjectId(value: unknown): value is string {
+  return typeof value === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+}
+
+export function projectInputValues(input: CreateProjectInput): CreateProjectValues {
+  return Object.fromEntries(
+    CREATE_PROJECT_FIELDS.map((field) => [field, String(input[field] ?? "")]),
+  ) as CreateProjectValues;
+}
+
+// A response from an older snapshot must not mask newly received project data.
+export function projectFormState(
+  state: CreateProjectState,
+  projectVersion: string,
+): CreateProjectState {
+  return state.status === "idle" || state.projectVersion === projectVersion
+    ? state
+    : { status: "idle" };
+}
+
 export function parseCreateProjectInput(
   formData: FormData,
 ): ParseCreateProjectResult {
   const values = {} as CreateProjectValues;
+  const enteredValues = {} as CreateProjectValues;
   for (const field of CREATE_PROJECT_FIELDS) {
     const raw = formData.get(field);
+    enteredValues[field] = typeof raw === "string" ? raw : "";
     values[field] = typeof raw === "string" ? raw.trim() : "";
   }
 
@@ -129,7 +154,7 @@ export function parseCreateProjectInput(
   }
 
   if (Object.keys(fieldErrors).length > 0 || !isProjectStatus(status)) {
-    return { success: false, fieldErrors, values };
+    return { success: false, fieldErrors, values: enteredValues };
   }
 
   const optional = (field: CreateProjectField) => values[field] || null;

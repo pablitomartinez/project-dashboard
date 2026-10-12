@@ -141,6 +141,28 @@ Consecuencia: la protección de los datos depende de que la aplicación desplega
 - `src/app/actions.ts` define la Server Action `createProjectAction`. Valida en el servidor y luego llama a `createProject` (`src/lib/projects.ts`), que inserta con `progress_mode = manual`. Al terminar ejecuta `revalidatePath("/")`.
 - **Solo uso local.** Cualquiera que pueda acceder a la aplicación puede invocar una Server Action con un POST directo, aunque no use la interfaz. No haber login no es una protección: mientras no exista control de acceso, la aplicación solo puede ejecutarse localmente y no se debe desplegar ni exponer en una red. No hay Route Handlers.
 
+La edición desde el dashboard reutiliza el formulario y la validación de creación.
+`updateProjectAction` valida el UUID y los campos en el servidor, actualiza solo
+los campos editables y revalida `/`. Conserva `progress_mode` y detecta proyectos
+inexistentes. Los errores conservan los valores ingresados; al guardar se muestran
+los valores guardados y una confirmación. No cambia el esquema de Supabase.
+
+Si el proyecto ya no existe, la action también revalida el listado para retirar
+la tarjeta obsoleta. El formulario conserva la entrada exacta ante validación
+fallida. El aviso de proyecto inexistente vive fuera de la tarjeta para seguir
+visible tras retirarla. El formulario muestra los valores de la fila devuelta
+por Supabase al guardar.
+Las respuestas del formulario se vinculan a `updated_at`: una respuesta anterior
+deja de aplicarse cuando el dashboard recibe otra versión. Los campos se recrean
+al cambiar sus valores iniciales; un refresco con datos nuevos reemplaza el borrador.
+
+Esto no resuelve la concurrencia entre pestañas: una pestaña desactualizada puede
+sobrescribir cambios de otra (última escritura gana), y `revalidatePath` no las
+sincroniza. Una mejora separada sería una actualización condicional atómica por
+`id` y el `updated_at` leído originalmente, con un mensaje de conflicto y recarga
+si no coincide. El uso actual de `updated_at` solo sincroniza la interfaz;
+no se utiliza como condición de escritura ni garantiza protección de concurrencia.
+
 ### Desarrollo local
 
 Requiere Docker y la [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started).
