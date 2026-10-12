@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  createContext, useContext, useId, useActionState, useEffect, useRef,
+  createContext, useContext, useId, useActionState, useEffect, useRef, useState,
   type ReactNode,
 } from "react";
 
@@ -10,6 +10,7 @@ import {
   PROJECT_STATUS_LABELS,
   PROJECT_STATUSES,
   projectInputValues,
+  projectFormState,
   type CreateProjectInput,
   type CreateProjectValues,
   type CreateProjectField,
@@ -17,6 +18,18 @@ import {
 } from "@/lib/project-input";
 
 const initialState: CreateProjectState = { status: "idle" };
+const MissingProjectNotice = createContext<(message: string) => void>(() => {});
+
+// This notice survives removal of the project's card during revalidation.
+export function ProjectFeedback({ children }: { children: ReactNode }) {
+  const [message, setMessage] = useState<string | null>(null);
+  return (
+    <MissingProjectNotice.Provider value={setMessage}>
+      {message && <p role="alert" className="text-sm text-red-700 dark:text-red-400">{message}</p>}
+      {children}
+    </MissingProjectNotice.Provider>
+  );
+}
 const FieldDefaults = createContext<{
   prefix: string;
   values?: CreateProjectValues;
@@ -74,17 +87,27 @@ export function CreateProjectForm() {
   return <ProjectForm />;
 }
 
-export function EditProjectForm({ project }: { project: CreateProjectInput & { id: string } }) {
+type EditableProject = CreateProjectInput & { id: string; updated_at: string };
+
+export function EditProjectForm({ project }: { project: EditableProject }) {
   return <ProjectForm project={project} />;
 }
 
-function ProjectForm({ project }: { project?: CreateProjectInput & { id: string } }) {
+function ProjectForm({ project }: { project?: EditableProject }) {
+  const reportMissingProject = useContext(MissingProjectNotice);
   const prefix = useId();
   const formRef = useRef<HTMLFormElement>(null);
-  const [state, formAction, pending] = useActionState(
-    project ? updateProjectAction.bind(null, project.id) : createProjectAction,
+  const [actionState, formAction, pending] = useActionState(
+    project ? async (previousState: CreateProjectState, formData: FormData) => {
+      const result = await updateProjectAction(project.id, project.updated_at, previousState, formData);
+      if (result.status === "error" && result.projectMissing) {
+        reportMissingProject(result.message);
+      }
+      return result;
+    } : createProjectAction,
     initialState,
   );
+  const state = project ? projectFormState(actionState, project.updated_at) : actionState;
 
   useEffect(() => {
     if (state.status === "success") {
@@ -113,7 +136,11 @@ function ProjectForm({ project }: { project?: CreateProjectInput & { id: string 
         className="mt-4"
         noValidate
       >
-        <fieldset disabled={pending} className="grid gap-4 sm:grid-cols-2">
+        <fieldset
+          key={JSON.stringify(state.status === "error" ? state.values : defaultValues)}
+          disabled={pending}
+          className="grid gap-4 sm:grid-cols-2"
+        >
           <Field name="name" label="Nombre *" state={state} className="sm:col-span-2">
             {(props) => <input {...props} type="text" required maxLength={120} />}
           </Field>

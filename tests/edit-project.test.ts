@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { isProjectId, projectInputValues, parseCreateProjectInput } from "../src/lib/project-input.ts";
+import { isProjectId, projectInputValues, parseCreateProjectInput, projectFormState, type CreateProjectState } from "../src/lib/project-input.ts";
 
 test("edit: validates project identifiers before updating", () => {
   assert.equal(isProjectId("123e4567-e89b-12d3-a456-426614174000"), true);
@@ -36,4 +36,28 @@ test("edit: invalid updates preserve entered values", () => {
   assert.equal(result.success, false);
   assert.equal(result.values.description, "Keep this text");
   assert.equal(result.values.manual_progress, "101");
+});
+
+test("edit: current success keeps normalized values and confirmation", () => {
+  const state: CreateProjectState = {
+    status: "success", message: "Saved", projectVersion: "v2",
+  };
+  assert.equal(projectFormState(state, "v2"), state);
+});
+
+test("edit: previous success cannot mask a newer project snapshot", () => {
+  const state: CreateProjectState = {
+    status: "success", message: "Old success", projectVersion: "v1",
+  };
+  assert.deepEqual(projectFormState(state, "v2"), { status: "idle" });
+});
+
+test("edit: validation drafts only apply to their original snapshot", () => {
+  const parsed = parseCreateProjectInput(new FormData());
+  const state: CreateProjectState = {
+    status: "error", message: "Invalid", fieldErrors: {},
+    values: parsed.values, projectVersion: "v1",
+  };
+  assert.equal(projectFormState(state, "v1"), state);
+  assert.deepEqual(projectFormState(state, "v2"), { status: "idle" });
 });

@@ -1,6 +1,6 @@
 import { connection } from "next/server";
 
-import { CreateProjectForm, EditProjectForm } from "@/app/create-project-form";
+import { CreateProjectForm, EditProjectForm, ProjectFeedback } from "@/app/create-project-form";
 import { PROJECT_STATUS_LABELS } from "@/lib/project-input";
 import { listProjects, type Project } from "@/lib/projects";
 
@@ -19,6 +19,7 @@ export default async function Home() {
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-10 sm:px-6">
+      <ProjectFeedback>
       <h1 className="text-2xl font-semibold tracking-tight">Proyectos</h1>
 
       <CreateProjectForm />
@@ -57,6 +58,7 @@ export default async function Home() {
           ))}
         </ul>
       )}
+      </ProjectFeedback>
     </main>
   );
 }

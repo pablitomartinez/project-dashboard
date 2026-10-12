@@ -42,12 +42,14 @@ export type CreateProjectFieldErrors = Partial<Record<CreateProjectField, string
 
 export type CreateProjectState =
   | { status: "idle" }
-  | { status: "success"; message: string; values?: CreateProjectValues }
+  | { status: "success"; message: string; values?: CreateProjectValues; projectVersion?: string }
   | {
       status: "error";
       message: string;
       fieldErrors: CreateProjectFieldErrors;
       values: CreateProjectValues;
+      projectVersion?: string;
+      projectMissing?: boolean;
     };
 
 export type ParseCreateProjectResult =
@@ -95,12 +97,24 @@ export function projectInputValues(input: CreateProjectInput): CreateProjectValu
   ) as CreateProjectValues;
 }
 
+// A response from an older snapshot must not mask newly received project data.
+export function projectFormState(
+  state: CreateProjectState,
+  projectVersion: string,
+): CreateProjectState {
+  return state.status === "idle" || state.projectVersion === projectVersion
+    ? state
+    : { status: "idle" };
+}
+
 export function parseCreateProjectInput(
   formData: FormData,
 ): ParseCreateProjectResult {
   const values = {} as CreateProjectValues;
+  const enteredValues = {} as CreateProjectValues;
   for (const field of CREATE_PROJECT_FIELDS) {
     const raw = formData.get(field);
+    enteredValues[field] = typeof raw === "string" ? raw : "";
     values[field] = typeof raw === "string" ? raw.trim() : "";
   }
 
@@ -140,7 +154,7 @@ export function parseCreateProjectInput(
   }
 
   if (Object.keys(fieldErrors).length > 0 || !isProjectStatus(status)) {
-    return { success: false, fieldErrors, values };
+    return { success: false, fieldErrors, values: enteredValues };
   }
 
   const optional = (field: CreateProjectField) => values[field] || null;

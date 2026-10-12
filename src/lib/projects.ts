@@ -51,12 +51,12 @@ export async function createProject(input: CreateProjectInput): Promise<void> {
   }
 }
 
-export async function updateProject(id: string, input: CreateProjectInput): Promise<boolean> {
+export async function updateProject(id: string, input: CreateProjectInput): Promise<Project | null> {
   const { data, error } = await getSupabaseServerClient()
     .from("projects")
     .update(input)
     .eq("id", id)
-    .select("id")
+    .select(PROJECT_COLUMNS)
     .maybeSingle();
 
   if (error) {
@@ -64,5 +64,5 @@ export async function updateProject(id: string, input: CreateProjectInput): Prom
     throw new Error("Could not update project.");
   }
 
-  return data !== null;
+  return data as Project | null;
 }

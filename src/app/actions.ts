@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import {
   parseCreateProjectInput,
   isProjectId,
+  projectInputValues,
   type CreateProjectState,
 } from "@/lib/project-input";
 import { createProject, updateProject } from "@/lib/projects";
@@ -42,6 +43,7 @@ export async function createProjectAction(
 
 export async function updateProjectAction(
   id: string,
+  projectVersion: string,
   _previousState: CreateProjectState,
   formData: FormData,
 ): Promise<CreateProjectState> {
@@ -52,28 +54,37 @@ export async function updateProjectAction(
       message: isProjectId(id) ? "Revisá los campos marcados." : "Proyecto inválido.",
       fieldErrors: parsed.success ? {} : parsed.fieldErrors,
       values: parsed.values,
+      projectVersion,
     };
   }
 
   try {
     const updated = await updateProject(id, parsed.data);
     if (!updated) {
+      revalidatePath("/");
       return {
         status: "error",
         message: "El proyecto ya no existe. Actualizá la página.",
         fieldErrors: {},
         values: parsed.values,
+        projectVersion,
+        projectMissing: true,
       };
     }
+    revalidatePath("/");
+    return {
+      status: "success",
+      message: "Cambios guardados.",
+      values: projectInputValues(updated),
+      projectVersion: updated.updated_at,
+    };
   } catch {
     return {
       status: "error",
       message: "No se pudo guardar el proyecto. Intentá de nuevo más tarde.",
       fieldErrors: {},
       values: parsed.values,
+      projectVersion,
     };
   }
-
-  revalidatePath("/");
-  return { status: "success", message: "Cambios guardados.", values: parsed.values };
 }
