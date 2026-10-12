@@ -45,11 +45,11 @@ Objetivo: recuperar rápidamente el contexto necesario para continuar un proyect
 
 ### Resources
 
-- [ ] Agregar recursos
-- [ ] Editar recursos
-- [ ] Eliminar recursos
+- [x] Agregar recursos
+- [x] Editar recursos
+- [x] Eliminar recursos (confirmación explícita)
 - [ ] Registrar cuenta/correo
-- [ ] Links externos
+- [x] Links externos
 
 ### Release
 

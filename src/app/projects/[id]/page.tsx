@@ -3,11 +3,14 @@ import { notFound } from "next/navigation";
 
 import { ProjectFeedback } from "@/app/create-project-form";
 import { ProjectProgressBar } from "@/app/project-progress";
+import { CreateResourceForm } from "@/app/projects/[id]/create-resource-form";
 import { CreateTaskForm } from "@/app/projects/[id]/create-task-form";
+import { ResourceItem } from "@/app/projects/[id]/resource-item";
 import { TaskItem } from "@/app/projects/[id]/task-item";
 import { isProjectId, PROJECT_STATUS_LABELS } from "@/lib/project-input";
 import { projectProgress } from "@/lib/project-progress";
 import { getProject, type Project } from "@/lib/projects";
+import { listResources, type Resource } from "@/lib/resources";
 import { countTasks } from "@/lib/task-input";
 import { listTasks, type Task } from "@/lib/tasks";
 
@@ -19,9 +22,9 @@ export default async function ProjectPage({ params }: PageProps<"/projects/[id]"
   const { id } = await params;
   if (!isProjectId(id)) notFound();
 
-  let loaded: [Project | null, Task[]] | null = null;
+  let loaded: [Project | null, Task[], Resource[]] | null = null;
   try {
-    loaded = await Promise.all([getProject(id), listTasks(id)]);
+    loaded = await Promise.all([getProject(id), listTasks(id), listResources(id)]);
   } catch (error) {
     console.error(
       "Failed to load project:",
@@ -53,7 +56,7 @@ export default async function ProjectPage({ params }: PageProps<"/projects/[id]"
     );
   }
 
-  const [project, tasks] = loaded as [Project, Task[]];
+  const [project, tasks, resources] = loaded as [Project, Task[], Resource[]];
   const { pending: pendingCount, completed: completedCount } = countTasks(tasks);
   const taskCounts = { total: tasks.length, completed: completedCount };
 
@@ -99,6 +102,33 @@ export default async function ProjectPage({ params }: PageProps<"/projects/[id]"
             <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
               {tasks.map((task) => (
                 <TaskItem key={task.id} projectId={project.id} task={task} />
+              ))}
+            </ul>
+          )}
+        </ProjectFeedback>
+      </section>
+
+      <section
+        aria-labelledby="resources-heading"
+        className="flex flex-col gap-4 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800"
+      >
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 id="resources-heading" className="font-medium">Recursos</h2>
+          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+            {plural(resources.length, "recurso", "recursos")}
+          </p>
+        </div>
+
+        <ProjectFeedback>
+          <CreateResourceForm projectId={project.id} />
+          {resources.length === 0 ? (
+            <p className="rounded-lg border border-dashed border-zinc-300 p-6 text-center text-sm text-zinc-600 dark:border-zinc-700 dark:text-zinc-400">
+              Todavía no hay recursos.
+            </p>
+          ) : (
+            <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
+              {resources.map((resource) => (
+                <ResourceItem key={resource.id} projectId={project.id} resource={resource} />
               ))}
             </ul>
           )}
