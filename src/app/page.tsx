@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { connection } from "next/server";
 
 import { CreateProjectForm, EditProjectForm, ProjectFeedback } from "@/app/create-project-form";
@@ -44,7 +45,11 @@ export default async function Home() {
               className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800"
             >
               <div className="flex items-center justify-between gap-3">
-                <h2 className="min-w-0 break-words font-medium">{project.name}</h2>
+                <h2 className="min-w-0 break-words font-medium">
+                  <Link href={`/projects/${project.id}`} className="underline-offset-4 hover:underline">
+                    {project.name}
+                  </Link>
+                </h2>
                 <span className="shrink-0 text-xs text-zinc-600 dark:text-zinc-400">
                   {PROJECT_STATUS_LABELS[project.status]}
                 </span>
